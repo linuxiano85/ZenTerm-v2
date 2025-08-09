@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Issues
+    url: https://github.com/linuxiano85/ZenTerm-v2/security/policy
+    about: Please report security vulnerabilities through GitHub's private reporting feature
+  - name: General Discussion
+    url: https://github.com/linuxiano85/ZenTerm-v2/discussions
+    about: Ask questions, share ideas, and discuss ZenTerm development
+  - name: Plugin Development
+    url: https://github.com/linuxiano85/ZenTerm-v2/discussions/categories/plugin-development
+    about: Get help with developing plugins for ZenTerm
