@@ -58,3 +58,36 @@ async fn pattern_double_star_tail() {
     tokio::time::sleep(std::time::Duration::from_millis(60)).await;
     assert_eq!(hits.load(Ordering::Relaxed), 3);
 }
+
+#[tokio::test]
+async fn pattern_edge_cases() {
+    // Test single star vs double star patterns
+    let bus = EventBus::new();
+    let single_star_hits = Arc::new(AtomicUsize::new(0));
+    let double_star_hits = Arc::new(AtomicUsize::new(0));
+    
+    {
+        let single_hits = single_star_hits.clone();
+        let _sub1 = bus.subscribe("voice.command.*", move |_evt| {
+            let hits = single_hits.clone();
+            async move { hits.fetch_add(1, Ordering::Relaxed); }
+        });
+        
+        let double_hits = double_star_hits.clone();
+        let _sub2 = bus.subscribe("voice.command.**", move |_evt| {
+            let hits = double_hits.clone();
+            async move { hits.fetch_add(1, Ordering::Relaxed); }
+        });
+        
+        // Single segment after voice.command - should match both * and **
+        bus.emit("voice.command.run", EventPayload::Text("test1".into()));
+        
+        // Multiple segments after voice.command - should only match **
+        bus.emit("voice.command.run.now", EventPayload::Text("test2".into()));
+        
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    
+    assert_eq!(single_star_hits.load(Ordering::Relaxed), 1, "Single star should match only 'voice.command.run'");
+    assert_eq!(double_star_hits.load(Ordering::Relaxed), 2, "Double star should match both patterns");
+}
