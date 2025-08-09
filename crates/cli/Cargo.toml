@@ -1,0 +1,24 @@
+[package]
+name = "zenterm-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "zenterm"
+path = "src/main.rs"
+
+[dependencies]
+zenterm-core = { path = "../core" }
+zenterm-plugins-api = { path = "../plugins-api" }
+zenterm-ai-providers = { path = "../ai-providers" }
+clap.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+dirs.workspace = true

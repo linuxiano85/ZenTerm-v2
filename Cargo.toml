@@ -10,7 +10,7 @@ resolver = "2"
 
 [workspace.package]
 edition = "2021"
-license = "MIT"
+license = "MIT OR BSD-2-Clause"
 repository = "https://github.com/linuxiano85/ZenTerm-v2"
 authors = ["ZenTerm Team"]
 
