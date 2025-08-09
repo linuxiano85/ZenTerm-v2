@@ -22,9 +22,9 @@ anyhow = "1.0"
 thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter","fmt","ansi","json"] }
-tracing-opentelemetry = { version = "0.23", optional = true }
-opentelemetry = { version = "0.23", features=["rt-tokio"], optional = true }
-opentelemetry-otlp = { version = "0.16", features=["http-proto","grpc-tonic"], optional = true }
+tracing-opentelemetry = "0.23"
+opentelemetry = { version = "0.23", features=["rt-tokio"] }
+opentelemetry-otlp = { version = "0.16", features=["http-proto","grpc-tonic"] }
 tokio = { version = "1.37", features = ["full"] }
 shell-words = "1.1.0"
 dirs = "5.0"
@@ -33,23 +33,23 @@ clap = { version = "4.5", features = ["derive"] }
 parking_lot = "0.12"
 dashmap = "5.5"
 lru = "0.12"
-prometheus = { version = "0.13", default-features = false, features=["process"], optional = true }
-hyper = { version = "0.14", features=["server","http1","tcp"], optional = true }
+prometheus = { version = "0.13", default-features = false, features=["process"] }
+hyper = { version = "0.14", features=["server","http1","tcp"] }
 futures = "0.3"
 os_pipe = "1.1"
 cfg-if = "1.0"
 regex = "1"
 uuid = { version="1", features=["v4","serde"] }
 time = { version="0.3", features=["formatting"] }
-libloading = { version="0.8", optional = true }
+libloading = "0.8"
 glob = "0.3"
 toml = "0.8"
 rand = "0.8"
-axum = { version="0.7", optional = true, features=["macros","json"] }
-utoipa = { version="4", optional = true, features=["axum_extras"] }
-utoipa-swagger-ui = { version="5", optional = true }
-criterion = { version="0.5", optional = true }
-proptest = { version="1.4", optional = true }
+axum = { version="0.7", features=["macros","json"] }
+utoipa = { version="4", features=["axum_extras"] }
+utoipa-swagger-ui = "5"
+criterion = "0.5"
+proptest = "1.4"
 
 [profile.release]
 opt-level = 3
