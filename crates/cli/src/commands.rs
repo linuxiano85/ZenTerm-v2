@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use tracing::{info, warn};
+use zenterm_core::{ConfigManager};
 
 use crate::{ConfigCommands, ElevateCommands, PluginCommands, ThemeCommands, VoiceCommands};
 
@@ -118,34 +119,53 @@ pub async fn handle_plugin_command(command: PluginCommands) -> Result<()> {
 pub async fn handle_config_command(command: ConfigCommands) -> Result<()> {
     match command {
         ConfigCommands::Path => {
-            info!("Showing configuration path");
-            // TODO: Get actual config path from dirs crate
-            if let Some(config_dir) = dirs::config_dir() {
-                let config_path = config_dir.join("zenterm").join("config.toml");
-                println!("📁 Configuration path: {}", config_path.display());
+            info!("Showing configuration file path");
+            let config_path = ConfigManager::new()?.config_path().to_path_buf();
+            println!("📄 Configuration file path: {}", config_path.display());
+            
+            if config_path.exists() {
+                println!("   Status: ✅ Exists");
             } else {
-                println!("❌ Could not determine configuration directory");
+                println!("   Status: ❌ Not found (run 'zenterm config init' to create)");
             }
             Ok(())
         }
         ConfigCommands::Validate => {
             info!("Validating configuration");
-            // TODO: Load and validate configuration file
-            println!("✅ Configuration validation");
-            println!("   TODO: Implement config validation");
-            println!("   - TOML syntax check");
-            println!("   - Schema validation");
-            println!("   - Plugin configuration verification");
+            match ConfigManager::validate_config(None) {
+                Ok(()) => {
+                    println!("✅ Configuration is valid");
+                    
+                    // Show loaded configuration summary
+                    if let Ok(config_manager) = ConfigManager::new() {
+                        let config = config_manager.config();
+                        println!("   Voice enabled: {}", config.voice.enabled);
+                        println!("   STT provider: {}", config.ai.stt_provider);
+                        println!("   Plugins enabled: {}", config.plugins.enabled);
+                        println!("   Current theme: {}", config.themes.current_theme);
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Configuration validation failed: {}", e);
+                    return Err(e);
+                }
+            }
             Ok(())
         }
         ConfigCommands::Init => {
             info!("Initializing default configuration");
-            // TODO: Create default configuration file
-            println!("🚀 Initializing default configuration");
-            println!("   TODO: Implement config initialization");
-            println!("   - Create config directory");
-            println!("   - Generate default config.toml");
-            println!("   - Set up plugin directories");
+            match ConfigManager::init_config() {
+                Ok(config_path) => {
+                    println!("🚀 Configuration initialized successfully");
+                    println!("   Config file: {}", config_path.display());
+                    println!("   Edit the file to customize ZenTerm behavior");
+                    println!("   Run 'zenterm config validate' to check your changes");
+                }
+                Err(e) => {
+                    println!("❌ Failed to initialize configuration: {}", e);
+                    return Err(e);
+                }
+            }
             Ok(())
         }
     }
