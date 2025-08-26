@@ -63,6 +63,11 @@ enum VoiceCommands {
     },
     /// Test microphone input
     TestMic,
+    /// Process text input through intent router (for testing)
+    Process {
+        /// Text input to process
+        text: String,
+    },
 }
 
 #[derive(Subcommand)]

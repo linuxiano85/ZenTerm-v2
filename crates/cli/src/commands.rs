@@ -1,10 +1,32 @@
 //! Command handlers for ZenTerm CLI
 
 use anyhow::Result;
-use tracing::{info, warn};
-use zenterm_core::{ConfigManager};
+use tracing::{info};
+use zenterm_core::{ConfigManager, SessionManager, IntentRouter};
+use zenterm_plugins_api::IntentContext;
+use std::sync::{Arc, OnceLock};
+use uuid::Uuid;
 
 use crate::{ConfigCommands, ElevateCommands, PluginCommands, ThemeCommands, VoiceCommands};
+
+/// Global session manager instance
+static SESSION_MANAGER: OnceLock<Arc<SessionManager>> = OnceLock::new();
+
+/// Get or initialize the global session manager
+fn get_session_manager() -> &'static Arc<SessionManager> {
+    SESSION_MANAGER.get_or_init(|| {
+        Arc::new(SessionManager::new(30)) // 30 minute default timeout
+    })
+}
+
+/// Get the current session ID from environment or create new one
+fn get_current_session_id() -> Uuid {
+    // In a real implementation, this might check environment variables
+    // or use a more sophisticated session discovery mechanism
+    // For now, we'll create a session per command invocation
+    let manager = get_session_manager();
+    manager.create_session()
+}
 
 pub async fn handle_voice_command(command: VoiceCommands) -> Result<()> {
     match command {
@@ -23,6 +45,58 @@ pub async fn handle_voice_command(command: VoiceCommands) -> Result<()> {
             // TODO: Test microphone access and audio levels
             println!("🔊 Testing microphone...");
             println!("   TODO: Implement microphone test functionality");
+            Ok(())
+        }
+        VoiceCommands::Process { text } => {
+            info!("Processing text input: {}", text);
+            
+            // Create intent router with default patterns
+            let router = IntentRouter::default();
+            
+            // Create a basic intent context
+            let session_id = get_current_session_id();
+            let context = IntentContext {
+                session_id: session_id.to_string(),
+                user_id: None,
+            };
+            
+            // Match and display intent patterns
+            match router.match_intent(&text) {
+                Ok(matches) => {
+                    if matches.is_empty() {
+                        println!("❌ No matching intents found for: '{}'", text);
+                        println!("   Available pattern types:");
+                        for pattern in router.patterns() {
+                            println!("     - {} ({})", pattern.name, pattern.capability);
+                        }
+                    } else {
+                        println!("🔍 Found {} matching intent(s) for: '{}'", matches.len(), text);
+                        for (i, intent_match) in matches.iter().enumerate() {
+                            println!("   {}. {} (score: {:.2}, capability: {})", 
+                                i + 1, 
+                                intent_match.pattern.name, 
+                                intent_match.score,
+                                intent_match.pattern.capability
+                            );
+                            if !intent_match.captures.is_empty() {
+                                println!("      Captured: {:?}", intent_match.captures);
+                            }
+                        }
+                        
+                        // Execute the best match (simulation since we don't have handlers yet)
+                        let best_match = &matches[0];
+                        println!("🚀 Would execute: {} with capability '{}'", 
+                            best_match.pattern.name, 
+                            best_match.pattern.capability
+                        );
+                        println!("   TODO: Implement actual intent handlers");
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Error processing intent: {}", e);
+                }
+            }
+            
             Ok(())
         }
     }
@@ -61,33 +135,55 @@ pub async fn handle_theme_command(command: ThemeCommands) -> Result<()> {
 }
 
 pub async fn handle_elevate_command(command: ElevateCommands) -> Result<()> {
+    let session_manager = get_session_manager();
+    let session_id = get_current_session_id();
+    
     match command {
         ElevateCommands::Status => {
             info!("Checking elevation status");
-            // TODO: Check current elevation status and remaining time
-            println!("🔐 Elevation status: Not elevated");
-            println!("   TODO: Implement elevation manager");
-            println!("   - Check sudo/PAM session status");
-            println!("   - Show remaining session time");
-            println!("   - Display audit log summary");
+            
+            if let Some(session_ref) = session_manager.get_session(&session_id) {
+                let session = session_ref.read();
+                
+                if session.is_elevated() {
+                    let remaining = session.elevation_remaining_seconds().unwrap_or(0);
+                    let minutes = remaining / 60;
+                    let seconds = remaining % 60;
+                    
+                    println!("🔓 Elevation status: ELEVATED");
+                    println!("   Remaining time: {}m {}s", minutes, seconds);
+                    println!("   Session ID: {}", session.id);
+                } else {
+                    println!("🔐 Elevation status: Not elevated");
+                }
+            } else {
+                println!("🔐 Elevation status: Not elevated (no session)");
+            }
+            
+            println!("   Note: PAM integration not yet implemented");
             Ok(())
         }
         ElevateCommands::Request { duration } => {
             info!("Requesting elevation for {} minutes", duration);
-            // TODO: Implement elevation request flow:
-            // 1. Password prompt (secure input)
-            // 2. PAM authentication
-            // 3. Time-boxed session creation
-            // 4. Audit log entry
             
-            println!("🔓 Requesting elevated privileges for {} minutes", duration);
-            println!("   TODO: Implement elevation manager");
-            println!("   - Secure password prompt");
-            println!("   - PAM integration");
-            println!("   - Session timeout management");
-            println!("   - Audit logging");
+            // For now, we'll simulate elevation without actual PAM authentication
+            // In a real implementation, this would include:
+            // 1. Secure password prompt
+            // 2. PAM authentication 
+            // 3. Proper privilege escalation
             
-            warn!("Elevation not implemented - running in user mode");
+            if let Some(session_ref) = session_manager.get_session(&session_id) {
+                let mut session = session_ref.write();
+                session.elevate(duration);
+                
+                println!("🔓 Elevated privileges granted for {} minutes", duration);
+                println!("   Session ID: {}", session.id);
+                println!("   WARNING: This is a simulation - no actual privilege escalation");
+                println!("   TODO: Implement PAM integration and secure authentication");
+            } else {
+                println!("❌ Failed to create session for elevation");
+            }
+            
             Ok(())
         }
     }
